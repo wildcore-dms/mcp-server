@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace WildcoreMcp\Tools;
+namespace WildcoreMcp\Tools\Components;
 
+use WildcoreMcp\Tools\AbstractTools;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Capability\Attribute\Schema;
 use Mcp\Schema\Result\CallToolResult;
@@ -15,10 +16,11 @@ use WildcoreMcp\WildcoreClient;
  * Macros: command templates executed on devices. Reading and execution need macros_execute
  * permission in WildCore, management (macros_manage_*, create/update/delete) needs macros_edit.
  */
-#[Requires(permissions: ['macros_execute'], components: ['macros'])]
+#[Requires(permissions: ['macros_execute'])]
 final class Macros extends AbstractTools
 {
     public const GROUP = 'macros';
+    public const COMPONENT = 'macros';
 
     private const FIELDS = ['name', 'description', 'display_for', 'display_output', 'models', 'user_roles', 'template', 'parameters'];
 

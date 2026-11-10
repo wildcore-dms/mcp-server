@@ -9,8 +9,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use WildcoreMcp\Config;
 use WildcoreMcp\ServerFactory;
-use WildcoreMcp\Tools\Api;
-use WildcoreMcp\Tools\SwitcherCore;
+use WildcoreMcp\Tools\Core\SwitcherCore;
 use WildcoreMcp\WildcoreClient;
 
 final class ServerFactoryTest extends TestCase
@@ -35,7 +34,7 @@ final class ServerFactoryTest extends TestCase
         $tools = $this->tools(new Config('http://wc', null, readOnly: false));
 
         self::assertSame(['macros', 'device-control'], $tools['macros_execute']);
-        self::assertSame(['ont-registration', 'device-control'], $tools['ont_register']);
+        self::assertSame(['onts_registration', 'device-control'], $tools['ont_register']);
         self::assertSame(['switcher-core', 'device-control'], $tools['swc_call']);
         self::assertSame(['macros', 'config'], $tools['macros_delete']);
         self::assertSame(['onts', 'config'], $tools['ont_signal_reset']);
@@ -56,7 +55,7 @@ final class ServerFactoryTest extends TestCase
 
         self::assertArrayHasKey('devices_list', $operator);
         self::assertArrayHasKey('ont_info', $operator);
-        self::assertArrayHasKey('api_get', $operator);
+        self::assertArrayHasKey('api_read', $operator);
         self::assertArrayNotHasKey('search', $operator, 'no global_search permission');
         self::assertArrayNotHasKey('ont_signal_reset', $operator, 'no device_iface_management permission');
         self::assertArrayNotHasKey('macros_list', $operator, 'macros component disabled');
@@ -75,17 +74,32 @@ final class ServerFactoryTest extends TestCase
         self::assertInstanceOf(\Mcp\Server::class, $server);
     }
 
-    public function testApiGetRejectsUnsafePaths(): void
+    public function testGroupsFollowWildcoreStructure(): void
     {
-        $api = new Api(new WildcoreClient(new Config('http://127.0.0.1:9', null)), new Config('http://wc', null));
-        foreach (['../system', 'device/../../x', 'http://evil/x', 'device?ip=1', 'a//b', 'a\\b', ''] as $path) {
-            try {
-                $api->get($path);
-                self::fail("Path '$path' must be rejected");
-            } catch (ToolCallException $e) {
-                self::assertStringContainsString('Invalid path', $e->getMessage());
+        $tools = $this->tools(new Config('http://wc', null, readOnly: false));
+
+        self::assertSame('olts', $tools['olt_onts'][0]);
+        self::assertSame('onts', $tools['onts_list'][0]);
+        self::assertSame('events', $tools['events_list'][0]);
+        self::assertSame('logs', $tools['logs_switcher_core'][0]);
+        foreach (ServerFactory::toolClasses() as $class) {
+            if (str_contains($class, '\\Components\\')) {
+                self::assertSame($class::GROUP, $class::COMPONENT, "$class group must be its component key");
+            } else {
+                self::assertNull($class::COMPONENT, "$class is a core group");
             }
         }
+    }
+
+    public function testSecretsHiddenByDefault(): void
+    {
+        $off = $this->tools(new Config('http://wc', null));
+        $on = $this->tools(new Config('http://wc', null, secretsEnabled: true));
+
+        self::assertArrayNotHasKey('console_log_get', $off);
+        self::assertSame(['console', 'read-only', 'secrets'], $on['console_log_get']);
+        $offWithOtherDisabled = $this->tools(new Config('http://wc', null, disabledTags: ['macros']));
+        self::assertArrayNotHasKey('console_log_get', $offWithOtherDisabled, 'DISABLED_TAGS must not enable secrets');
     }
 
     public function testSwcReadRejectsWriteModules(): void

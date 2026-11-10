@@ -27,6 +27,8 @@ final class Config
         public readonly ?string $httpBearerToken = null,
         public readonly array $allowedHosts = ['localhost', '127.0.0.1', '[::1]'],
         public readonly int $capabilitiesTtl = 300,
+        public readonly bool $secretsEnabled = false,
+        public readonly ?string $openapiUrl = null,
         public readonly string $logLevel = 'warning',
     ) {
     }
@@ -54,6 +56,8 @@ final class Config
             httpBearerToken: $get('MCP_HTTP_BEARER_TOKEN'),
             allowedHosts: self::list($get('MCP_HTTP_ALLOWED_HOSTS')) ?: ['localhost', '127.0.0.1', '[::1]'],
             capabilitiesTtl: self::int($get, 'CAPABILITIES_TTL', 300),
+            secretsEnabled: self::bool($get, 'ENABLE_SECRETS', false),
+            openapiUrl: $get('OPENAPI_URL'),
             logLevel: strtolower($get('LOG_LEVEL') ?? 'warning'),
         );
     }

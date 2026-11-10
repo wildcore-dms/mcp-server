@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace WildcoreMcp\Tools;
+namespace WildcoreMcp\Tools\Core;
 
+use WildcoreMcp\Tools\AbstractTools;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Capability\Attribute\Schema;
 use Mcp\Schema\Result\CallToolResult;

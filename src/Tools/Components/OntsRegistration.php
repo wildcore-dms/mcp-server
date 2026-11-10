@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace WildcoreMcp\Tools;
+namespace WildcoreMcp\Tools\Components;
 
+use WildcoreMcp\Tools\AbstractTools;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Capability\Attribute\Schema;
 use Mcp\Schema\Result\CallToolResult;
@@ -14,10 +15,11 @@ use WildcoreMcp\WildcoreClient;
 /**
  * Registration of new ONUs on OLT by registration macros (onts_registration component).
  */
-#[Requires(permissions: ['unregistered_onts'], components: ['onts_registration'])]
-final class OntRegistration extends AbstractTools
+#[Requires(permissions: ['unregistered_onts'])]
+final class OntsRegistration extends AbstractTools
 {
-    public const GROUP = 'ont-registration';
+    public const GROUP = 'onts_registration';
+    public const COMPONENT = 'onts_registration';
 
     private const BASE = ['component', 'onts_registration'];
     private const FIELDS = ['name', 'models', 'template', 'parameters', 'enabled'];

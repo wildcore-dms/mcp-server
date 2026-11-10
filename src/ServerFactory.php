@@ -14,25 +14,17 @@ use WildcoreMcp\Tools\AbstractTools;
  * Builds MCP server with tools filtered by READ_ONLY_MODE, DISABLED_TAGS and, when known,
  * by WildCore permissions of the token owner and enabled components (see Requires).
  *
- * Every tool gets two tags: its group (devices, onts, macros ...) and its kind:
+ * Every tool gets its group tag - a WildCore core area (devices, interfaces, logs ...) or a component
+ * key (olts, macros, events ...) - and its kind:
  *  - read-only      - readOnlyHint: only reads data;
  *  - device-control - openWorldHint without readOnlyHint: changes equipment state;
  *  - config         - changes WildCore data (macros, templates, stored signals).
+ * Tools exposing credentials (device configs, access profiles) get the "secrets" tag and are
+ * listed only with ENABLE_SECRETS=true.
  */
 final class ServerFactory
 {
     public const VERSION = '0.1.0';
-
-    /** @var list<class-string<AbstractTools>> */
-    public const TOOL_CLASSES = [
-        Tools\Devices::class,
-        Tools\Interfaces::class,
-        Tools\Onts::class,
-        Tools\SwitcherCore::class,
-        Tools\Macros::class,
-        Tools\OntRegistration::class,
-        Tools\Api::class,
-    ];
 
     public function __construct(
         private readonly Config $config,
@@ -72,8 +64,8 @@ final class ServerFactory
     {
         $client = $this->client ?? new WildcoreClient($this->config);
         $result = [];
-        foreach (self::TOOL_CLASSES as $class) {
-            $instance = new $class($client, $this->config);
+        foreach (self::toolClasses() as $class) {
+            $instance = new $class($client, $this->config, $capabilities);
             $reflection = new \ReflectionClass($class);
             $classRequires = ($reflection->getAttributes(Requires::class)[0] ?? null)?->newInstance();
             foreach ($reflection->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
@@ -84,12 +76,15 @@ final class ServerFactory
                 /** @var McpTool $tool */
                 $tool = $attribute->newInstance();
                 $kind = self::kind($tool);
-                $tags = [$class::GROUP, $kind];
-                if (($this->config->readOnly && 'read-only' !== $kind) || array_intersect($tags, $this->config->disabledTags)) {
+                $requires = ($method->getAttributes(Requires::class)[0] ?? null)?->newInstance();
+                $secret = $classRequires?->secret || $requires?->secret;
+                $tags = $secret ? [$class::GROUP, $kind, 'secrets'] : [$class::GROUP, $kind];
+                if (($this->config->readOnly && 'read-only' !== $kind)
+                    || ($secret && !$this->config->secretsEnabled)
+                    || array_intersect($tags, $this->config->disabledTags)) {
                     continue;
                 }
-                $requires = ($method->getAttributes(Requires::class)[0] ?? null)?->newInstance();
-                if (null !== $capabilities && !self::isAllowed($capabilities, $classRequires, $requires)) {
+                if (null !== $capabilities && !self::isAllowed($capabilities, $class::COMPONENT, $classRequires, $requires)) {
                     continue;
                 }
                 $result[] = [
@@ -106,11 +101,30 @@ final class ServerFactory
     }
 
     /**
+     * Tool classes: core areas first, then components, each sorted by name.
+     *
+     * @return list<class-string<AbstractTools>>
+     */
+    public static function toolClasses(): array
+    {
+        $classes = [];
+        foreach (['Core', 'Components'] as $dir) {
+            $files = glob(__DIR__.'/Tools/'.$dir.'/*.php') ?: [];
+            sort($files);
+            foreach ($files as $file) {
+                $classes[] = 'WildcoreMcp\\Tools\\'.$dir.'\\'.basename($file, '.php');
+            }
+        }
+
+        return $classes;
+    }
+
+    /**
      * @param array{components: list<string>, permissions: list<string>, root: bool} $capabilities
      */
-    private static function isAllowed(array $capabilities, ?Requires $class, ?Requires $method): bool
+    private static function isAllowed(array $capabilities, ?string $component, ?Requires $class, ?Requires $method): bool
     {
-        $components = array_merge($class?->components ?? [], $method?->components ?? []);
+        $components = array_merge(null === $component ? [] : [$component], $class?->components ?? [], $method?->components ?? []);
         if (array_diff($components, $capabilities['components'])) {
             return false;
         }

@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace WildcoreMcp\Tools;
+namespace WildcoreMcp\Tools\Core;
 
+use WildcoreMcp\Tools\AbstractTools;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Capability\Attribute\Schema;
 use Mcp\Schema\Result\CallToolResult;
@@ -72,60 +73,6 @@ final class Onts extends AbstractTools
         $list = $this->api->get('ont-signal', compact('device_id', 'interface_id'));
 
         return $this->out(null !== $interface_id ? $list : $this->paginate($list, $limit, $offset));
-    }
-
-    /**
-     * Get ONU list directly from OLT (status, signal, distance, serial) through switcher-core.
-     *
-     * @param int    $device_id OLT device ID
-     * @param string $source    cache - cached data refreshed if stale; store - only cache; device - live request
-     * @param int    $limit     maximum number of ONUs to return
-     * @param int    $offset    number of ONUs to skip
-     */
-    #[Requires(permissions: ['olts_info'], components: ['olts'])]
-    #[McpTool(name: 'olt_onts', annotations: new ToolAnnotations(readOnlyHint: true, openWorldHint: true))]
-    public function oltOnts(
-        int $device_id,
-        #[Schema(enum: self::SOURCES)] string $source = 'cache',
-        #[Schema(minimum: 1, maximum: 1000)] int $limit = 100,
-        #[Schema(minimum: 0)] int $offset = 0,
-    ): CallToolResult {
-        $list = $this->api->get(WildcoreClient::path('component', 'olts', 'interfaces', 'onts', $device_id), ['from' => $this->source($source)]);
-
-        return $this->out($this->paginate($list, $limit, $offset));
-    }
-
-    /**
-     * Get full details of one ONU from OLT: status, optical levels, UNI ports, MAC addresses, configuration.
-     * Use source "history" to get stored history of the ONU instead.
-     *
-     * @param int    $device_id OLT device ID
-     * @param string $bind_key  ONU interface bind key (interface.bind_key from onts_list or device_interfaces), not the interface name
-     * @param string $source    cache, store, device (live) or history
-     */
-    #[Requires(permissions: ['olts_info'], components: ['olts'])]
-    #[McpTool(name: 'ont_info', annotations: new ToolAnnotations(readOnlyHint: true, openWorldHint: true))]
-    public function info(
-        int $device_id,
-        #[Schema(minLength: 1)] string $bind_key,
-        #[Schema(enum: ['cache', 'store', 'device', 'history'])] string $source = 'cache',
-    ): CallToolResult {
-        $source = 'history' === $source ? $source : $this->source($source);
-
-        return $this->out($this->api->get(WildcoreClient::path('component', 'olts', 'interfaces', 'ont', $device_id, $bind_key), ['from' => $source]));
-    }
-
-    /**
-     * List PON ports of OLT with ONU counters and optical data.
-     *
-     * @param int    $device_id OLT device ID
-     * @param string $source    cache - cached data refreshed if stale; store - only cache; device - live request
-     */
-    #[Requires(permissions: ['olts_info'], components: ['olts'])]
-    #[McpTool(name: 'olt_pon_ports', annotations: new ToolAnnotations(readOnlyHint: true, openWorldHint: true))]
-    public function ponPorts(int $device_id, #[Schema(enum: self::SOURCES)] string $source = 'cache'): CallToolResult
-    {
-        return $this->out($this->api->get(WildcoreClient::path('component', 'olts', 'interfaces', 'pon-ports', $device_id), ['from' => $this->source($source)]));
     }
 
     /**

@@ -100,6 +100,39 @@ final class WildcoreClient
     }
 
     /**
+     * Calls an API operation described in OpenAPI: query for every method, JSON body when given.
+     *
+     * @param array<string, mixed>      $query
+     * @param array<string, mixed>|null $body
+     */
+    public function call(string $method, string $path, array $query = [], ?array $body = null): mixed
+    {
+        $options = ['query' => self::query($query)];
+        if (null !== $body) {
+            $options['json'] = (object) $body;
+        }
+
+        return $this->request(strtoupper($method), $path, $options);
+    }
+
+    /**
+     * Downloads a non-API file from WildCore, e.g. the OpenAPI spec at /swagger/openapi.yaml.
+     */
+    public function raw(string $url): string
+    {
+        try {
+            $response = $this->http->request('GET', $url);
+        } catch (GuzzleException $e) {
+            throw new ToolCallException(\sprintf('Could not get %s from WildCore: %s', $url, $e->getMessage() ?: $e::class), previous: $e);
+        }
+        if (200 !== $response->getStatusCode()) {
+            throw new ToolCallException(\sprintf('Could not get %s from WildCore (HTTP %d)', $url, $response->getStatusCode()));
+        }
+
+        return (string) $response->getBody();
+    }
+
+    /**
      * Returns "data" of WildCore response, or {data, meta} when the response has meta (pagination etc.).
      *
      * @param array<string, mixed> $options

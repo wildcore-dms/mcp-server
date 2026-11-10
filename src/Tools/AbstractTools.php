@@ -11,19 +11,26 @@ use WildcoreMcp\Config;
 use WildcoreMcp\WildcoreClient;
 
 /**
- * Base for a group of tools. GROUP is the tag of every tool in the class,
- * so a whole group can be switched off with DISABLED_TAGS.
+ * Base for a group of tools. Groups follow WildCore structure: core areas (Tools\Core) and
+ * components (Tools\Components, GROUP = component key). GROUP is the tag of every tool in the class,
+ * so a whole group can be switched off with DISABLED_TAGS; COMPONENT must be enabled in WildCore
+ * for the tools to be listed.
  */
 abstract class AbstractTools
 {
     public const GROUP = '';
+    public const COMPONENT = null;
 
     /** Data source for switcher-core based calls: cache, store (cache only) or device (live). */
     protected const SOURCES = ['cache', 'store', 'device'];
 
+    /**
+     * @param array{components: list<string>, permissions: list<string>, root: bool}|null $capabilities null - unknown
+     */
     public function __construct(
         protected readonly WildcoreClient $api,
         protected readonly Config $config,
+        protected readonly ?array $capabilities = null,
     ) {
     }
 
@@ -59,6 +66,71 @@ abstract class AbstractTools
         }
 
         return new CallToolResult([new TextContent($json)]);
+    }
+
+    /**
+     * Log period as WildCore expects it ("Y-m-d H:i:s", WildCore server time): explicit start/stop,
+     * or the last $hours hours in the timezone of this server (set TZ to the WildCore timezone).
+     *
+     * @return array{start: string, stop: string}
+     */
+    protected function period(?string $start, ?string $stop, int $hours): array
+    {
+        $format = static function (?string $value, string $name): ?string {
+            if (null === $value || '' === trim($value)) {
+                return null;
+            }
+            $date = date_create($value) ?: throw new ToolCallException("$name must be a date/time like 2026-11-10 14:00:00");
+
+            return $date->format('Y-m-d H:i:s');
+        };
+        $stop = $format($stop, 'stop') ?? date('Y-m-d H:i:s');
+
+        return [
+            'start' => $format($start, 'start') ?? date('Y-m-d H:i:s', strtotime($stop) - $hours * 3600),
+            'stop' => $stop,
+        ];
+    }
+
+    /**
+     * Short device reference instead of the full WildCore device object (access profile, group, params ...).
+     *
+     * @return array<string, mixed>|null
+     */
+    protected static function device(mixed $device): ?array
+    {
+        if (!\is_array($device)) {
+            return null;
+        }
+
+        return array_filter([
+            'id' => $device['id'] ?? null,
+            'ip' => $device['ip'] ?? null,
+            'name' => $device['name'] ?? null,
+            'model' => $device['model']['name'] ?? null,
+        ], static fn ($v) => null !== $v && '' !== $v);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    protected static function user(mixed $user): ?array
+    {
+        return \is_array($user) ? array_filter(['id' => $user['id'] ?? null, 'login' => $user['login'] ?? null, 'name' => $user['name'] ?? null], static fn ($v) => null !== $v) : null;
+    }
+
+    /**
+     * Error message with place, without the stack trace.
+     */
+    protected static function error(mixed $error): mixed
+    {
+        if (!\is_array($error)) {
+            return \is_string($error) ? trim($error) : $error;
+        }
+        $message = trim((string) ($error['message'] ?? ''));
+        $place = $error['breakpoint'] ?? (isset($error['file']) ? $error['file'].':'.($error['line'] ?? '') : null);
+
+        return null === $place ? $message : $message.' ('.$place.')';
     }
 
     protected function source(string $source): string

@@ -37,6 +37,12 @@ final class App
         if (is_file($root.'/.env')) {
             Dotenv::createImmutable($root)->safeLoad();
         }
+        // PHP ignores TZ, but log periods ("last N hours") must be in WildCore server time
+        $tz = $_ENV['TZ'] ?? getenv('TZ');
+        // timezone_open accepts aliases too (Europe/Kiev); an unknown name keeps UTC
+        if (\is_string($tz) && '' !== $tz && false !== @timezone_open($tz)) {
+            date_default_timezone_set($tz);
+        }
 
         return new self(Config::fromEnv($_ENV + getenv()));
     }
