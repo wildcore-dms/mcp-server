@@ -28,6 +28,7 @@ final class Config
         public readonly array $allowedHosts = ['localhost', '127.0.0.1', '[::1]'],
         public readonly int $capabilitiesTtl = 300,
         public readonly bool $secretsEnabled = false,
+        public readonly bool $toolSearch = false,
         public readonly ?string $openapiUrl = null,
         public readonly string $logLevel = 'warning',
     ) {
@@ -57,6 +58,7 @@ final class Config
             allowedHosts: self::list($get('MCP_HTTP_ALLOWED_HOSTS')) ?: ['localhost', '127.0.0.1', '[::1]'],
             capabilitiesTtl: self::int($get, 'CAPABILITIES_TTL', 300),
             secretsEnabled: self::bool($get, 'ENABLE_SECRETS', false),
+            toolSearch: self::bool($get, 'TOOL_SEARCH_ENABLED', false),
             openapiUrl: $get('OPENAPI_URL'),
             logLevel: strtolower($get('LOG_LEVEL') ?? 'warning'),
         );

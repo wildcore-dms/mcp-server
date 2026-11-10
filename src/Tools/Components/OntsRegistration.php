@@ -74,7 +74,7 @@ final class OntsRegistration extends AbstractTools
      */
     #[Requires(permissions: ['unregistered_onts', 'unregistered_onts_preview'])]
     #[McpTool(name: 'ont_registration_preview', annotations: new ToolAnnotations(readOnlyHint: true, openWorldHint: true))]
-    public function preview(int $device_id, array $ont, array $params = [], #[Schema(enum: self::SOURCES)] string $source = 'cache'): CallToolResult
+    public function preview(int $device_id, #[Schema(definition: [...self::OBJECT, 'description' => 'unregistered ONU record as returned by onts_unregistered'])] array $ont, #[Schema(definition: [...self::OBJECT, 'description' => 'values of registration macros parameters'])] array $params = [], #[Schema(enum: self::SOURCES)] string $source = 'cache'): CallToolResult
     {
         return $this->out($this->api->post(WildcoreClient::path(...self::BASE, ...['execute']), $this->body($device_id, $ont, $params, $source) + ['preview' => true]));
     }
@@ -89,7 +89,7 @@ final class OntsRegistration extends AbstractTools
      */
     #[Requires(permissions: ['unregistered_onts', 'unregistered_onts_preview'])]
     #[McpTool(name: 'ont_registration_variables', annotations: new ToolAnnotations(readOnlyHint: true, openWorldHint: true))]
-    public function variables(int $device_id, array $ont, array $params = [], #[Schema(enum: self::SOURCES)] string $source = 'cache'): CallToolResult
+    public function variables(int $device_id, #[Schema(definition: [...self::OBJECT, 'description' => 'unregistered ONU record as returned by onts_unregistered'])] array $ont, #[Schema(definition: [...self::OBJECT, 'description' => 'values of registration macros parameters'])] array $params = [], #[Schema(enum: self::SOURCES)] string $source = 'cache'): CallToolResult
     {
         return $this->out($this->api->post(WildcoreClient::path(...self::BASE, ...['variables']), $this->body($device_id, $ont, $params, $source)));
     }
@@ -104,7 +104,7 @@ final class OntsRegistration extends AbstractTools
      * @param string               $source    data source for template variables
      */
     #[McpTool(name: 'ont_register', annotations: new ToolAnnotations(readOnlyHint: false, destructiveHint: true, openWorldHint: true))]
-    public function register(int $device_id, array $ont, array $params = [], #[Schema(enum: self::SOURCES)] string $source = 'cache'): CallToolResult
+    public function register(int $device_id, #[Schema(definition: [...self::OBJECT, 'description' => 'unregistered ONU record as returned by onts_unregistered'])] array $ont, #[Schema(definition: [...self::OBJECT, 'description' => 'values of registration macros parameters'])] array $params = [], #[Schema(enum: self::SOURCES)] string $source = 'cache'): CallToolResult
     {
         return $this->out($this->api->post(WildcoreClient::path(...self::BASE, ...['execute']), $this->body($device_id, $ont, $params, $source) + ['preview' => false]));
     }

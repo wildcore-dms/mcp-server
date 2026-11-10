@@ -69,7 +69,7 @@ final class SwitcherCore extends AbstractTools
     public function read(
         int $device_id,
         #[Schema(enum: self::READ_MODULES)] string $module,
-        array $arguments = [],
+        #[Schema(definition: [...self::OBJECT, 'description' => 'module arguments, e.g. {"interface": "eth1/0/1"}'])] array $arguments = [],
         #[Schema(enum: self::SOURCES)] string $source = 'cache',
     ): CallToolResult {
         if (!\in_array($module, self::READ_MODULES, true)) {
@@ -88,7 +88,7 @@ final class SwitcherCore extends AbstractTools
      * @param array<string, mixed> $arguments module arguments
      */
     #[McpTool(name: 'swc_call', annotations: new ToolAnnotations(readOnlyHint: false, destructiveHint: true, openWorldHint: true))]
-    public function call(int $device_id, #[Schema(pattern: '^[a-z0-9_]+$')] string $module, array $arguments = []): CallToolResult
+    public function call(int $device_id, #[Schema(pattern: '^[a-z0-9_]+$')] string $module, #[Schema(definition: [...self::OBJECT, 'description' => 'module arguments, e.g. {"interface": "eth1/0/1"}'])] array $arguments = []): CallToolResult
     {
         return $this->out($this->api->post(WildcoreClient::path('switcher-core', 'device', $module, $device_id), $arguments));
     }

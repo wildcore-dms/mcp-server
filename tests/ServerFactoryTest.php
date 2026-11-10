@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace WildcoreMcp\Tests;
 
+use Mcp\Capability\Discovery\DocBlockParser;
+use Mcp\Capability\Discovery\SchemaGenerator;
 use Mcp\Exception\ToolCallException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use WildcoreMcp\Config;
 use WildcoreMcp\ServerFactory;
+use WildcoreMcp\ToolSearch;
 use WildcoreMcp\Tools\Core\SwitcherCore;
 use WildcoreMcp\WildcoreClient;
 
@@ -116,6 +119,56 @@ final class ServerFactoryTest extends TestCase
         foreach (SwitcherCore::READ_MODULES as $module) {
             self::assertDoesNotMatchRegularExpression('/^ctrl_|_ctrl$|^(reboot|save_config|clear_.*|console_command|multi_console_command|cable_diag|arp_ping)$/', $module);
         }
+    }
+
+    public function testAssociativeArrayParametersAreJsonObjects(): void
+    {
+        $docBlocks = new DocBlockParser();
+        $generator = new SchemaGenerator($docBlocks);
+        $checked = 0;
+        foreach ((new ServerFactory(new Config('http://wc', null, readOnly: false, secretsEnabled: true), new NullLogger()))->tools() as $tool) {
+            $method = new \ReflectionMethod($tool['instance'], $tool['method']);
+            $schema = $generator->generate($method);
+            foreach ($docBlocks->getParamTags($docBlocks->parseDocBlock($method->getDocComment())) as $name => $tag) {
+                if (str_starts_with((string) $docBlocks->getParamTypeString($tag), 'array<string')) {
+                    $type = (array) $schema['properties'][ltrim($name, '$')]['type'];
+                    self::assertContains('object', $type, "{$tool['name']}.$name must be a JSON object");
+                    ++$checked;
+                }
+            }
+        }
+        self::assertGreaterThan(5, $checked);
+    }
+
+    public function testToolSearchMode(): void
+    {
+        $tools = (new ServerFactory(new Config('http://127.0.0.1:9', null, timeout: 2), new NullLogger()))->tools();
+        $search = new ToolSearch($tools);
+
+        $found = json_decode($search->search('onu signal')->content[0]->text, true);
+        self::assertContains('ont_signals', array_column($found['tools'], 'name'));
+        self::assertArrayHasKey('properties', $found['tools'][0]['input_schema']);
+
+        try {
+            // Empty nested object arrives as an empty PHP array - it must pass validation and reach WildCore
+            $search->call('macros_preview', ['macros_id' => 1, 'device_id' => 1, 'params' => []]);
+            self::fail('No WildCore is running, the call must fail on connection');
+        } catch (ToolCallException $e) {
+            self::assertStringContainsString('Could not get an answer from WildCore', $e->getMessage());
+        }
+
+        $this->expectException(ToolCallException::class);
+        $this->expectExceptionMessage('Invalid arguments for device_get');
+        $search->call('device_get', ['device_id' => 'not-a-number']);
+    }
+
+    public function testToolSearchRejectsUnknownTool(): void
+    {
+        $search = new ToolSearch((new ServerFactory(new Config('http://wc', null), new NullLogger()))->tools());
+
+        $this->expectException(ToolCallException::class);
+        $this->expectExceptionMessage("Unknown tool 'macros_execute'");
+        $search->call('macros_execute', []);
     }
 
     /**

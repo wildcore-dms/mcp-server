@@ -172,8 +172,8 @@ final class Api extends AbstractTools
     public function read(
         string $path,
         #[Schema(enum: ['GET', 'POST', 'PUT'])] string $method = 'GET',
-        array $query = [],
-        ?array $body = null,
+        #[Schema(definition: [...self::OBJECT, 'description' => 'query parameters'])] array $query = [],
+        #[Schema(definition: [...self::NULLABLE_OBJECT, 'description' => 'JSON body for POST/PUT/PATCH operations'])] ?array $body = null,
     ): CallToolResult {
         [$operation, $path, $level] = $this->resolveCall($method, $path);
         if ('read' !== $level && !('secret' === $level && 'GET' === $operation['method'])) {
@@ -197,8 +197,8 @@ final class Api extends AbstractTools
     public function call(
         #[Schema(enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])] string $method,
         string $path,
-        array $query = [],
-        ?array $body = null,
+        #[Schema(definition: [...self::OBJECT, 'description' => 'query parameters'])] array $query = [],
+        #[Schema(definition: [...self::NULLABLE_OBJECT, 'description' => 'JSON body for POST/PUT/PATCH operations'])] ?array $body = null,
     ): CallToolResult {
         [$operation, $path] = $this->resolveCall($method, $path);
 

@@ -6,6 +6,7 @@ namespace WildcoreMcp;
 
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Server;
+use Mcp\Schema\ToolAnnotations;
 use Mcp\Server\Session\FileSessionStore;
 use Psr\Log\LoggerInterface;
 use WildcoreMcp\Tools\AbstractTools;
@@ -46,8 +47,17 @@ final class ServerFactory
         if (null !== $sessionDir) {
             $builder->setSession(new FileSessionStore($sessionDir));
         }
-        foreach ($this->tools($capabilities) as $tool) {
-            $builder->addTool([$tool['instance'], $tool['method']], $tool['name'], annotations: $tool['annotations'], meta: ['tags' => $tool['tags']]);
+        $tools = $this->tools($capabilities);
+        if ($this->config->toolSearch) {
+            $search = new ToolSearch($tools);
+            $builder->addTool([$search, 'search'], 'search_tools', annotations: new ToolAnnotations(readOnlyHint: true));
+            $builder->addTool([$search, 'call'], 'call_tool', annotations: $this->config->readOnly
+                ? new ToolAnnotations(readOnlyHint: true)
+                : new ToolAnnotations(readOnlyHint: false, destructiveHint: true, openWorldHint: true));
+        } else {
+            foreach ($tools as $tool) {
+                $builder->addTool([$tool['instance'], $tool['method']], $tool['name'], annotations: $tool['annotations'], meta: ['tags' => $tool['tags']]);
+            }
         }
 
         return $builder->build();
@@ -155,6 +165,10 @@ final class ServerFactory
             .'devices, interfaces, ONUs with optical signal levels, switcher-core modules, macros and ONU registration. '
             .'Access is limited by permissions and device groups of the WildCore user owning the API token. '
             .'Prefer source "cache" for switcher-core based tools, use "device" only when fresh data is required.';
+
+        if ($this->config->toolSearch) {
+            $text .= ' Tools are available through search_tools (find a tool and its input schema) and call_tool.';
+        }
 
         return $this->config->readOnly
             ? $text.' The server is in read-only mode.'

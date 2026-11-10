@@ -65,7 +65,7 @@ final class Macros extends AbstractTools
         int $device_id,
         ?int $interface_id = null,
         ?string $interface_bind_key = null,
-        array $params = [],
+        #[Schema(definition: [...self::OBJECT, 'description' => 'values of macros parameters'])] array $params = [],
         #[Schema(enum: self::SOURCES)] string $source = 'cache',
     ): CallToolResult {
         return $this->out($this->api->post('component/macros/execute', $this->body($macros_id, $device_id, $interface_id, $interface_bind_key, $params, $source) + ['preview' => true]));
@@ -87,7 +87,7 @@ final class Macros extends AbstractTools
         int $device_id,
         ?int $interface_id = null,
         ?string $interface_bind_key = null,
-        array $params = [],
+        #[Schema(definition: [...self::OBJECT, 'description' => 'values of macros parameters'])] array $params = [],
         #[Schema(enum: self::SOURCES)] string $source = 'cache',
     ): CallToolResult {
         return $this->out($this->api->post('component/macros/variables', $this->body($macros_id, $device_id, $interface_id, $interface_bind_key, $params, $source)));
@@ -110,7 +110,7 @@ final class Macros extends AbstractTools
         int $device_id,
         ?int $interface_id = null,
         ?string $interface_bind_key = null,
-        array $params = [],
+        #[Schema(definition: [...self::OBJECT, 'description' => 'values of macros parameters'])] array $params = [],
         #[Schema(enum: self::SOURCES)] string $source = 'cache',
     ): CallToolResult {
         return $this->out($this->api->post('component/macros/execute', $this->body($macros_id, $device_id, $interface_id, $interface_bind_key, $params, $source) + ['preview' => false]));

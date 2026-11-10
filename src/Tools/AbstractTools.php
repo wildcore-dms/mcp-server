@@ -21,6 +21,13 @@ abstract class AbstractTools
     public const GROUP = '';
     public const COMPONENT = null;
 
+    /**
+     * JSON schema of an object parameter (array<string, mixed>). The SDK decodes an empty JSON object
+     * to an empty PHP array and validates it as such, so an empty array is accepted as well.
+     */
+    public const OBJECT = ['type' => ['object', 'array'], 'additionalProperties' => true, 'maxItems' => 0];
+    public const NULLABLE_OBJECT = ['type' => ['object', 'array', 'null'], 'additionalProperties' => true, 'maxItems' => 0];
+
     /** Data source for switcher-core based calls: cache, store (cache only) or device (live). */
     protected const SOURCES = ['cache', 'store', 'device'];
 
