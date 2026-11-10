@@ -1,0 +1,30 @@
+version: '3'
+
+server:
+  command: "php bin/wildcore-mcp"
+  # worker stderr goes to RoadRunner log as is
+  relay: pipes
+
+http:
+  address: "${MCP_HTTP_HOST:-127.0.0.1}:${MCP_HTTP_PORT:-8000}"
+  # MCP request body is a small JSON; RoadRunner itself rejects anything over 1 MB
+  max_request_size: 1
+  access_logs: false
+  middleware: [ "rate_limiter" ]
+  rate_limiter:
+    key: ip
+    rate: ${RATE_LIMIT_PER_MINUTE:-120}
+    interval: 1m
+    burst: 20
+  pool:
+    num_workers: ${MCP_HTTP_WORKERS:-2}
+    max_jobs: 1000
+    allocate_timeout: 60s
+    destroy_timeout: 60s
+    supervisor:
+      max_worker_memory: 128
+
+logs:
+  mode: production
+  level: ${RR_LOG_LEVEL:-info}
+  encoding: console

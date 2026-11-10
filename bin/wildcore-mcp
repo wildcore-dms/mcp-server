@@ -1,0 +1,20 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// MCP server over stdio.
+
+// In stdio mode stdout belongs to the protocol - PHP errors go to stderr only
+ini_set('display_errors', 'stderr');
+
+require dirname(__DIR__).'/vendor/autoload.php';
+
+try {
+    $app = WildcoreMcp\App::fromEnvironment(dirname(__DIR__));
+} catch (InvalidArgumentException $e) {
+    fwrite(STDERR, 'Invalid configuration: '.$e->getMessage()."\n");
+    exit(1);
+}
+
+exit($app->run());

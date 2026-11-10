@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "wildcore",
+  "description": "WildCore DMS integrations for Claude Code",
+  "owner": {
+    "name": "WildCore"
+  },
+  "plugins": [
+    {
+      "name": "wildcore",
+      "description": "WildCore DMS MCP server (devices, interfaces, ONUs, optical signals, switcher-core, macros, ONU registration) with operating skills",
+      "source": "./claude-plugin",
+      "category": "productivity"
+    }
+  ]
+}

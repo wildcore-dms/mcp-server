@@ -1,0 +1,39 @@
+{
+  "name": "wildcore",
+  "version": "0.1.0",
+  "description": "WildCore DMS MCP server (devices, interfaces, ONUs, optical signals, switcher-core, macros, ONU registration) with operating skills",
+  "author": {
+    "name": "WildCore"
+  },
+  "homepage": "https://github.com/wildcore-dms/mcp-server",
+  "repository": "https://github.com/wildcore-dms/mcp-server",
+  "license": "MIT",
+  "keywords": ["wildcore", "network", "olt", "onu", "gpon", "mcp"],
+  "userConfig": {
+    "wildcore_url": {
+      "type": "string",
+      "title": "WildCore URL",
+      "description": "WildCore base URL, e.g. https://wildcore.example.com",
+      "required": true
+    },
+    "wildcore_token": {
+      "type": "string",
+      "title": "WildCore API key",
+      "description": "API key (X-Auth-Key) of the WildCore user the tools run as. Use a dedicated user with only the permissions you want to give Claude.",
+      "sensitive": true,
+      "required": true
+    },
+    "read_only": {
+      "type": "boolean",
+      "title": "Read-only mode",
+      "description": "Hide tools that change equipment or WildCore data (macros execution, ONU registration, switcher-core control).",
+      "default": true
+    },
+    "docker_image": {
+      "type": "string",
+      "title": "Docker image",
+      "description": "wildcore-mcp image to run (build it with: docker build -t wildcore-mcp https://github.com/wildcore-dms/mcp-server.git)",
+      "default": "wildcore-mcp:latest"
+    }
+  }
+}

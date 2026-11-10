@@ -1,0 +1,15 @@
+{
+  "wildcore": {
+    "command": "docker",
+    "args": [
+      "run", "-i", "--rm", "--read-only", "--tmpfs", "/tmp", "--cap-drop", "ALL",
+      "-e", "WILDCORE_URL", "-e", "WILDCORE_TOKEN", "-e", "READ_ONLY_MODE",
+      "${user_config.docker_image}", "php", "bin/wildcore-mcp"
+    ],
+    "env": {
+      "WILDCORE_URL": "${user_config.wildcore_url}",
+      "WILDCORE_TOKEN": "${user_config.wildcore_token}",
+      "READ_ONLY_MODE": "${user_config.read_only}"
+    }
+  }
+}
