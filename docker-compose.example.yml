@@ -1,6 +1,5 @@
 services:
   wildcore-mcp:
-    build: .
     image: ghcr.io/wildcore-dms/mcp-server:latest
     restart: unless-stopped
     env_file: .env

@@ -14,19 +14,6 @@ MCP client ──MCP (stdio | Streamable HTTP)──▶ wildcore-mcp ──HTTP 
 Stack: PHP 8.5, the official [MCP PHP SDK](https://github.com/modelcontextprotocol/php-sdk) (`mcp/sdk`),
 Guzzle, [RoadRunner](https://roadrunner.dev) 3 for HTTP.
 
-## PHP security
-
-PHP **8.5.12+** or **8.4.27+** (8.3.36+) is required: earlier versions are affected by CVE-2026-109618 /
-CVE-2026-109619 (state corruption after OOM in multipart parsing, CVSS 9.2). `composer.json` refuses to
-install on an unpatched version, and the server logs a warning at startup. In addition:
-
-- HTTP is accepted by RoadRunner (Go): the PHP worker runs as CLI and gets an already parsed PSR-7 request, so PHP's
-  rfc1867 multipart parser never runs; each worker is a separate process restarted after 1000 requests or 128 MB;
-- RoadRunner limits the body to 1 MB and rate-limits clients by IP (`RATE_LIMIT_PER_MINUTE`); `/mcp` accepts only
-  `application/json`;
-- `php.ini` additionally disables `enable_post_data_reading`, `file_uploads` and `session.upload_progress`;
-- the container runs as an unprivileged user with a read-only root filesystem, no capabilities and `no-new-privileges`.
-
 ## Permissions and components
 
 Tools run with the permissions of the WildCore user owning `WILDCORE_TOKEN`; roles and device groups are
@@ -36,7 +23,7 @@ is not enabled - the same way the web panel builds its menu (`need_permissions`,
 
 | Group | Required in WildCore |
 |---|---|
-| `devices`, `interfaces`, `onts` | `device_show` permission (`search` - `global_search`, `ont_signal_reset` - `device_iface_management`) |
+| `devices`, `interfaces`, `onts` | `device_show` permission (`search` - `global_search`, `device_groups_list` - `system_info`, `ont_signal_reset` - `device_iface_management`) |
 | `olt_onts`, `ont_info`, `olt_pon_ports` | `olts` component, `olts_info` permission |
 | `switcher-core` | root user only (system/owner roles): WildCore has permission rules only for `system`, `sys_resources`, `parse_interface` |
 | `macros` | `macros` component, `macros_execute` permission; management - `macros_edit` |
@@ -75,8 +62,8 @@ request to narrow the query.
 ## Running
 
 ```bash
-cp .env.example .env   # WILDCORE_URL, WILDCORE_TOKEN
-docker pull ghcr.io/wildcore-dms/mcp-server:latest   # or: docker build -t wildcore-mcp .
+cp .env.example .env   # set WILDCORE_URL and WILDCORE_TOKEN
+docker pull ghcr.io/wildcore-dms/mcp-server:latest
 ```
 
 Images are built by GitHub Actions (`.github/workflows/docker.yml`) for `linux/amd64` and `linux/arm64`:
@@ -87,15 +74,17 @@ exceptions with a reason and an expiry date live in `.trivyignore`).
 ### stdio
 
 ```bash
-docker run -i --rm --env-file /path/to/.env wildcore-mcp php bin/wildcore-mcp
+docker run -i --rm --env-file .env ghcr.io/wildcore-dms/mcp-server:latest php bin/wildcore-mcp
 ```
 
-Without Docker (PHP 8.5.12+ or 8.4.27+): `composer install && bin/wildcore-mcp`.
+Without Docker: PHP 8.5.12+ or 8.4.27+ with `ext-sockets`, then `composer install --no-dev && bin/wildcore-mcp`
+(configuration from `.env` in the project root or from environment variables).
 
 ### HTTP (Streamable HTTP)
 
 ```bash
-docker compose -f docker-compose.example.yml up -d
+docker compose -f docker-compose.example.yml up -d   # reads .env from the same directory
+curl http://127.0.0.1:8000/health                    # ok
 ```
 
 - `/mcp` - MCP endpoint, `/health` - liveness probe (does not call WildCore);
@@ -108,12 +97,15 @@ All clients of the HTTP server share the permissions of a single `WILDCORE_TOKEN
 
 ## Connecting to Claude
 
-Create a dedicated WildCore user for Claude with only the permissions and device groups it should have, and
-generate an API key for it (Users -> user -> generate auth key). The examples use the image published by CI,
-`ghcr.io/wildcore-dms/mcp-server:latest` (`docker pull` it once); a locally built `wildcore-mcp:latest` works the same.
+1. Create a dedicated WildCore user for Claude with only the role and device groups it should have.
+2. Create an API key for it: Management -> Users -> edit the user -> **Create API key** (needs the
+   `user_auth_key_generate` permission and your current password). Pick the expiry date consciously - the tools
+   stop working when the key expires.
+3. `docker pull ghcr.io/wildcore-dms/mcp-server:latest` - all examples below use this image.
 
-`WILDCORE_URL` is resolved inside the container: use an address reachable from Docker, not `localhost`
-(add `--network host` to the docker arguments to reach a WildCore on the same machine).
+`WILDCORE_URL` is resolved inside the container, so `localhost` points to the container itself. Use an address
+of WildCore reachable from Docker. For a WildCore on the same machine either use the host's LAN address or add
+`--network host` to the docker arguments (not possible with the plugin, which has fixed docker arguments).
 
 ### Claude Code - plugin (recommended)
 
@@ -122,17 +114,21 @@ Docker) and two skills: `wildcore` (how to use the tools, safety rules for devic
 level guidance) and `/wildcore:onu-check <serial|MAC|agreement>`.
 
 ```
-/plugin marketplace add wildcore-dms/mcp-server     # or a local clone: /path/to/mcp-server
+/plugin marketplace add wildcore-dms/mcp-server
 /plugin install wildcore@wildcore
 ```
 
-On install Claude Code asks for the WildCore URL, the API key (stored as a secret), read-only mode (on by
-default) and the Docker image name. Change them later in `/plugin` -> wildcore -> configure. Check the
-connection with `/mcp`.
+On recent Claude Code versions one command does both: `/plugin install wildcore --marketplace wildcore-dms/mcp-server`.
+
+On install Claude Code asks for the WildCore URL, the API key (stored as a secret, not in plain config files),
+read-only mode (on by default) and the Docker image (default `ghcr.io/wildcore-dms/mcp-server:latest`). The
+values can be changed later in the plugin settings in `/plugin`. Restart Claude Code and check the connection
+with `/mcp`: the `wildcore` server should be connected and list its tools.
 
 ### Claude Code - without the plugin
 
-stdio (local Docker):
+stdio (local Docker). The API key ends up in plain text in the Claude Code configuration (`~/.claude.json`);
+prefer the plugin when that matters.
 
 ```bash
 claude mcp add wildcore \
@@ -151,7 +147,9 @@ keep secrets in environment variables: `"headers": {"Authorization": "Bearer ${W
 
 ### Claude Desktop
 
-Settings -> Developer -> Edit Config, add to `claude_desktop_config.json` and restart Claude Desktop:
+Settings -> Developer -> Edit Config, add to `claude_desktop_config.json` and restart Claude Desktop.
+On macOS Claude Desktop may not see Docker in `PATH` - then use the full path as `command`
+(`/usr/local/bin/docker`, or `/opt/homebrew/bin/docker`; check with `which docker`).
 
 ```json
 {
@@ -186,7 +184,10 @@ See `.env.example`. Main settings: `WILDCORE_URL`, `WILDCORE_TOKEN`, `READ_ONLY_
 
 ```bash
 docker build -t wildcore-mcp:dev .
-docker run --rm -v "$PWD":/app -w /app wildcore-mcp:dev php vendor/bin/phpunit
+# dev dependencies (PHPUnit) into ./vendor, then tests inside the image
+docker run --rm -u "$(id -u):$(id -g)" -e COMPOSER_HOME=/tmp/composer -v "$PWD":/app -w /app composer:2 \
+  composer install --ignore-platform-req=ext-sockets
+docker run --rm -u "$(id -u):$(id -g)" -v "$PWD":/app -w /app wildcore-mcp:dev php vendor/bin/phpunit
 ```
 
 A new tool is a public method with `#[McpTool]` in a class from `src/Tools/`: the description comes from
