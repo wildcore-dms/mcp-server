@@ -23,7 +23,7 @@ Guzzle, [RoadRunner](https://roadrunner.dev) 3 for HTTP.
 Tools are grouped the same way as WildCore itself:
 
 - **core** groups - areas of the WildCore core: `devices`, `interfaces`, `onts`, `logs`, `poller`,
-  `switcher-core`, `api`;
+  `switcher-core`, `users`, `api`;
 - **component** groups - named by the WildCore component key (`olts`, `macros`, `events` ...); they are listed
   only when that component is enabled in WildCore.
 
@@ -42,12 +42,13 @@ e.g. `DISABLED_TAGS=switches_control,olts_control,api`.
 
 | Group | Tools | Needs in WildCore |
 |---|---|---|
-| devices | `devices_list`, `device_get`, `device_find_by_ip`, `search`, `device_groups_list` | `device_show`; `search` - `global_search`; groups - `system_info` |
+| devices | `devices_list`, `device_get`, `device_find_by_ip`, `search`, `device_groups_list`, `device_models_list` | `device_show`; `search` - `global_search`; groups - `system_info` |
 | interfaces | `interfaces_list`, `interfaces_search`, `device_interfaces`, `interface_get`, `interface_history`, `interface_types` | `device_show` |
 | onts | `onts_list` (filter such as `optical.rx < -27`), `ont_signals`, `ont_signal_reset` | `device_show`; reset - `device_iface_management` |
 | logs | `logs_actions`, `logs_action_names`, `logs_switcher_core`, `logs_switcher_core_modules`, `calling_errors`, `logs_pollers`, `logs_poller_names`, `logs_schedule`, `logs_schedule_keys`, `latest_system_actions` | `system_logs_actions`, `log_switcher_core_actions`, `log_poller`, `schedule_reports` |
 | poller | `device_pollers`, `device_poll` | `poller_info_by_device`; poll - `device_management` |
 | switcher-core | `swc_modules`, `swc_read` (read modules only), `swc_call` (any module) | root user only |
+| users | `user_roles_list` | `user_self_control` (every role by default) |
 | api | `api_search`, `api_describe`, `api_read`, `api_call` | the permission of each operation |
 
 ### Components
@@ -56,8 +57,8 @@ e.g. `DISABLED_TAGS=switches_control,olts_control,api`.
 |---|---|---|
 | olts | `olt_onts`, `ont_info`, `olt_pon_ports`, `olt_physical_ports`, `olt_snooping`, `olt_cards`, `olt_resources`, `olt_onts_blacklist` | `olts_info` |
 | olts_control | `ont_reboot`, `ont_set_state`, `ont_set_description`, `ont_uni_port_set`, `ont_reset`, `ont_deregister`, `olt_port_reset`, `olt_port_set_description` | `olts_ctrl_*` of each action |
-| onts_registration | `onts_unregistered`, `ont_find_unregistered`, `ont_registration_macros`, `ont_registration_preview`, `ont_registration_variables`, `ont_register`, `ont_registration_templates`, `ont_registration_template_get/create/update/clone/delete` | `unregistered_onts`; templates - `unregistered_onts_config` |
-| macros | `macros_list`, `macros_get`, `macros_preview`, `macros_variables`, `macros_execute`, `macros_manage_list`, `macros_manage_get`, `macros_create`, `macros_update`, `macros_clone`, `macros_delete` | `macros_execute`; management - `macros_edit` |
+| onts_registration | `onts_unregistered`, `ont_find_unregistered`, `ont_registration_macros`, `ont_registration_preview`, `ont_registration_variables`, `ont_register`, `ont_registration_templates`, `ont_registration_template_variables`, `ont_registration_template_preview`, `ont_registration_template_get/create/update/clone/delete` | `unregistered_onts`; templates - `unregistered_onts_config` |
+| macros | `macros_list`, `macros_get`, `macros_preview`, `macros_variables`, `macros_execute`, `macros_template_variables`, `macros_template_preview`, `macros_manage_list`, `macros_manage_get`, `macros_create`, `macros_update`, `macros_clone`, `macros_delete` | `macros_execute`; management - `macros_edit` |
 | switches | `switch_interfaces`, `switch_vlans`, `switch_snooping`, `switch_resources`, `switch_sfp_diag`, `switch_cable_diag` | `switches_info` |
 | switches_control | `switch_port_set`, `switch_clear_counters`, `switch_save_config`, `switch_reboot` | `switches_*` of each action |
 | routers | `router_table` (interfaces, ARP, FDB, VLANs, BGP peers, direct routes, resources) | `router_info` |
@@ -164,8 +165,9 @@ of WildCore reachable from Docker. For a WildCore on the same machine either use
 ### Claude Code - plugin (recommended)
 
 The repository is a Claude Code plugin marketplace. The `wildcore` plugin bundles the MCP server (stdio via
-Docker) and two skills: `wildcore` (how to use the tools, safety rules for device-changing actions, signal
-level guidance) and `/wildcore:onu-check <serial|MAC|agreement>`.
+Docker) and skills: `wildcore` (how to use the tools, meaning of values, signal levels, safety rules for
+device-changing actions), `macros` (writing macros and ONU registration templates: variables, parameter types,
+Twig rules, special commands, examples) and `/wildcore:onu-check <serial|MAC|agreement>`.
 
 ```
 /plugin marketplace add wildcore-dms/mcp-server

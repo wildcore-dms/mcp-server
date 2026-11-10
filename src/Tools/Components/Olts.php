@@ -130,7 +130,8 @@ final class Olts extends AbstractTools
     }
 
     /**
-     * Get ONU black-list (blocked serials/MACs) on one OLT or on all OLTs.
+     * Get ONU black-list (blocked serials/MACs that can not register) on one OLT or on all OLTs - explains why a new
+     * ONU does not appear or register. Supported on C-Data OLTs; read from OLTs every 10 minutes.
      *
      * @param int|null $device_id OLT device ID, empty - all OLTs
      * @param string   $source    cache - cached data refreshed if stale; store - only cache; device - live request

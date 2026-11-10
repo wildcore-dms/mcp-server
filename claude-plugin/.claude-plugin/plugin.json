@@ -1,6 +1,6 @@
 {
   "name": "wildcore",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "WildCore DMS MCP server (devices, interfaces, ONUs, optical signals, switcher-core, macros, ONU registration) with operating skills",
   "author": {
     "name": "WildCore"

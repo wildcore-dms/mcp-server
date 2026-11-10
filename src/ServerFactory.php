@@ -25,7 +25,7 @@ use WildcoreMcp\Tools\AbstractTools;
  */
 final class ServerFactory
 {
-    public const VERSION = '0.1.0';
+    public const VERSION = '0.2.0';
 
     public function __construct(
         private readonly Config $config,

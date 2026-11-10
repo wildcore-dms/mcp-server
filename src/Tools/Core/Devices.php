@@ -78,4 +78,28 @@ final class Devices extends AbstractTools
     {
         return $this->out($this->api->get('device-group'));
     }
+
+    /**
+     * List device models known to WildCore: ID, key, name, vendor, type (SWITCH, OLT, ROUTER ...).
+     * Model IDs are needed for macros and ONU registration templates.
+     *
+     * @param string|null $vendor only this vendor (case-insensitive), e.g. "ZTE", "C-Data", "D-Link"
+     * @param string|null $type   only this device type, e.g. OLT, SWITCH, ROUTER
+     */
+    #[McpTool(name: 'device_models_list', annotations: new ToolAnnotations(readOnlyHint: true))]
+    public function models(?string $vendor = null, ?string $type = null): CallToolResult
+    {
+        $models = $this->api->get('device-model');
+        $models = array_values(array_filter(\is_array($models) ? $models : [], static fn ($m) => \is_array($m)
+            && (null === $vendor || 0 === strcasecmp((string) ($m['vendor'] ?? ''), $vendor))
+            && (null === $type || 0 === strcasecmp((string) ($m['type'] ?? ''), $type))));
+
+        return $this->out(array_map(static fn (array $m) => array_filter([
+            'id' => $m['id'] ?? null,
+            'key' => $m['key'] ?? null,
+            'name' => $m['name'] ?? null,
+            'vendor' => $m['vendor'] ?? null,
+            'type' => $m['type'] ?? null,
+        ], static fn ($v) => null !== $v), $models));
+    }
 }

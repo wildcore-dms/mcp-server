@@ -74,7 +74,7 @@ final class OntsRegistration extends AbstractTools
      */
     #[Requires(permissions: ['unregistered_onts', 'unregistered_onts_preview'])]
     #[McpTool(name: 'ont_registration_preview', annotations: new ToolAnnotations(readOnlyHint: true, openWorldHint: true))]
-    public function preview(int $device_id, #[Schema(definition: [...self::OBJECT, 'description' => 'unregistered ONU record as returned by onts_unregistered'])] array $ont, #[Schema(definition: [...self::OBJECT, 'description' => 'values of registration macros parameters'])] array $params = [], #[Schema(enum: self::SOURCES)] string $source = 'cache'): CallToolResult
+    public function preview(int $device_id, #[Schema(definition: [...self::OBJECT, 'description' => 'unregistered ONU record as returned by onts_unregistered'])] array $ont, #[Schema(definition: [...self::OBJECT, 'description' => 'values of template parameters by key; for select_from_variable pass the whole item object (e.g. a profile from data.pon_profiles.line)'])] array $params = [], #[Schema(enum: self::SOURCES)] string $source = 'cache'): CallToolResult
     {
         return $this->out($this->api->post(WildcoreClient::path(...self::BASE, ...['execute']), $this->body($device_id, $ont, $params, $source) + ['preview' => true]));
     }
@@ -89,9 +89,9 @@ final class OntsRegistration extends AbstractTools
      */
     #[Requires(permissions: ['unregistered_onts', 'unregistered_onts_preview'])]
     #[McpTool(name: 'ont_registration_variables', annotations: new ToolAnnotations(readOnlyHint: true, openWorldHint: true))]
-    public function variables(int $device_id, #[Schema(definition: [...self::OBJECT, 'description' => 'unregistered ONU record as returned by onts_unregistered'])] array $ont, #[Schema(definition: [...self::OBJECT, 'description' => 'values of registration macros parameters'])] array $params = [], #[Schema(enum: self::SOURCES)] string $source = 'cache'): CallToolResult
+    public function variables(int $device_id, #[Schema(definition: [...self::OBJECT, 'description' => 'unregistered ONU record as returned by onts_unregistered'])] array $ont, #[Schema(definition: [...self::OBJECT, 'description' => 'values of template parameters by key; for select_from_variable pass the whole item object (e.g. a profile from data.pon_profiles.line)'])] array $params = [], #[Schema(enum: self::SOURCES)] string $source = 'cache'): CallToolResult
     {
-        return $this->out($this->api->post(WildcoreClient::path(...self::BASE, ...['variables']), $this->body($device_id, $ont, $params, $source)));
+        return $this->out($this->safeTemplateVariables($this->api->post(WildcoreClient::path(...self::BASE, ...['variables']), $this->body($device_id, $ont, $params, $source))));
     }
 
     /**
@@ -104,9 +104,49 @@ final class OntsRegistration extends AbstractTools
      * @param string               $source    data source for template variables
      */
     #[McpTool(name: 'ont_register', annotations: new ToolAnnotations(readOnlyHint: false, destructiveHint: true, openWorldHint: true))]
-    public function register(int $device_id, #[Schema(definition: [...self::OBJECT, 'description' => 'unregistered ONU record as returned by onts_unregistered'])] array $ont, #[Schema(definition: [...self::OBJECT, 'description' => 'values of registration macros parameters'])] array $params = [], #[Schema(enum: self::SOURCES)] string $source = 'cache'): CallToolResult
+    public function register(int $device_id, #[Schema(definition: [...self::OBJECT, 'description' => 'unregistered ONU record as returned by onts_unregistered'])] array $ont, #[Schema(definition: [...self::OBJECT, 'description' => 'values of template parameters by key; for select_from_variable pass the whole item object (e.g. a profile from data.pon_profiles.line)'])] array $params = [], #[Schema(enum: self::SOURCES)] string $source = 'cache'): CallToolResult
     {
         return $this->out($this->api->post(WildcoreClient::path(...self::BASE, ...['execute']), $this->body($device_id, $ont, $params, $source) + ['preview' => false]));
+    }
+
+    /**
+     * Variables a registration template gets for an unregistered ONU - for writing or debugging a template.
+     *
+     * @param int                  $device_id OLT device ID
+     * @param array<string, mixed> $ont       unregistered ONU record exactly as returned by onts_unregistered
+     * @param array<string, mixed> $params    sample values of parameters
+     * @param string               $source    data source for device data
+     */
+    #[Requires(permissions: ['unregistered_onts_config'])]
+    #[McpTool(name: 'ont_registration_template_variables', annotations: new ToolAnnotations(readOnlyHint: true, openWorldHint: true))]
+    public function templateVariables(
+        int $device_id,
+        #[Schema(definition: [...self::OBJECT, 'description' => 'unregistered ONU record as returned by onts_unregistered'])] array $ont,
+        #[Schema(definition: [...self::OBJECT, 'description' => 'sample values of parameters'])] array $params = [],
+        #[Schema(enum: self::SOURCES)] string $source = 'cache',
+    ): CallToolResult {
+        return $this->out($this->safeTemplateVariables($this->api->post(WildcoreClient::path(...self::BASE, ...['control', 'variables']), $this->body($device_id, $ont, $params, $source))));
+    }
+
+    /**
+     * Render a registration template for an unregistered ONU without saving or executing it.
+     *
+     * @param string               $template  Twig template of registration commands
+     * @param int                  $device_id OLT device ID
+     * @param array<string, mixed> $ont       unregistered ONU record exactly as returned by onts_unregistered
+     * @param array<string, mixed> $params    values of parameters
+     * @param string               $source    data source for device data
+     */
+    #[Requires(permissions: ['unregistered_onts_config'])]
+    #[McpTool(name: 'ont_registration_template_preview', annotations: new ToolAnnotations(readOnlyHint: true, openWorldHint: true))]
+    public function templatePreview(
+        string $template,
+        int $device_id,
+        #[Schema(definition: [...self::OBJECT, 'description' => 'unregistered ONU record as returned by onts_unregistered'])] array $ont,
+        #[Schema(definition: [...self::OBJECT, 'description' => 'values of parameters'])] array $params = [],
+        #[Schema(enum: self::SOURCES)] string $source = 'cache',
+    ): CallToolResult {
+        return $this->out($this->api->post(WildcoreClient::path(...self::BASE, ...['control', 'preview']), $this->body($device_id, $ont, $params, $source) + ['template' => $template]));
     }
 
     /**
@@ -132,7 +172,11 @@ final class OntsRegistration extends AbstractTools
     }
 
     /**
-     * Create registration macros (template).
+     * Create an ONU registration template (Twig) for OLT models. Only one template per model is allowed.
+     * Prepare it with ont_registration_template_variables and check it with ont_registration_template_preview.
+     * Template variables: ont (the unregistered ONU, e.g. ont._serial_hex), iface (its PON port, e.g. iface._port,
+     * iface._technology), free.first / free.all (free ONU IDs on the port), device (device.params - custom
+     * parameters), data.<module> (e.g. data.pon_profiles.line / .srv), params, interfaces_list.
      *
      * @param string                     $name        name
      * @param string                     $template    registration commands template
@@ -145,8 +189,8 @@ final class OntsRegistration extends AbstractTools
     public function templateCreate(
         string $name,
         string $template,
-        array $models,
-        array $parameters = [],
+        #[Schema(definition: ['type' => 'array', 'items' => ['type' => 'object', 'required' => ['id'], 'properties' => ['id' => ['type' => 'integer']]], 'description' => 'OLT models, see device_models_list; one registration template per model'])] array $models,
+        #[Schema(definition: Macros::PARAMETERS)] array $parameters = [],
         bool $enabled = true,
     ): CallToolResult {
         return $this->out($this->api->post(WildcoreClient::path(...self::BASE, ...['control']), compact(...self::FIELDS)));
@@ -168,8 +212,8 @@ final class OntsRegistration extends AbstractTools
         int $template_id,
         ?string $name = null,
         ?string $template = null,
-        ?array $models = null,
-        ?array $parameters = null,
+        #[Schema(definition: ['type' => ['array', 'null'], 'items' => ['type' => 'object', 'required' => ['id'], 'properties' => ['id' => ['type' => 'integer']]]])] ?array $models = null,
+        #[Schema(definition: [...Macros::PARAMETERS, 'type' => ['array', 'null']])] ?array $parameters = null,
         ?bool $enabled = null,
     ): CallToolResult {
         $changes = array_filter(compact(...self::FIELDS), static fn ($v) => null !== $v);

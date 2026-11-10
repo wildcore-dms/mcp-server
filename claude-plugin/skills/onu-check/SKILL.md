@@ -18,5 +18,6 @@ Use the `wildcore` MCP tools, read-only only - do not change anything on the OLT
    - OLT (name, IP), PON port and ONU interface, description/agreement;
    - status and when it last changed;
    - ONU rx, OLT rx, tx, distance, temperature, and the min/max envelope;
-   - verdict: normal / marginal / bad signal (GPON rx about -8..-27 dBm normal, below -28 dBm bad) and the likely
-     cause if something is off (e.g. both rx low - fiber/connector; only OLT rx low - upstream direction).
+   - verdict: normal / bad signal (WildCore default normal range for ONU RX and OLT RX: -28..-10 dBm), whether
+     the min/max envelope shows a floating signal, and the likely cause if something is off (both RX low -
+     fiber/connector; only OLT RX low - upstream direction or ONU optics; LOS - line; PowerOff - subscriber power).

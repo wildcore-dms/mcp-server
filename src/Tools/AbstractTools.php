@@ -127,7 +127,8 @@ abstract class AbstractTools
     }
 
     /**
-     * Error message with place, without the stack trace.
+     * Error message without the stack trace and the place in WildCore code (closed source, no use to the model);
+     * the place is kept only when there is no message.
      */
     protected static function error(mixed $error): mixed
     {
@@ -135,9 +136,36 @@ abstract class AbstractTools
             return \is_string($error) ? trim($error) : $error;
         }
         $message = trim((string) ($error['message'] ?? ''));
-        $place = $error['breakpoint'] ?? (isset($error['file']) ? $error['file'].':'.($error['line'] ?? '') : null);
+        if ('' !== $message) {
+            return $message;
+        }
 
-        return null === $place ? $message : $message.' ('.$place.')';
+        return $error['breakpoint'] ?? (isset($error['file']) ? $error['file'].':'.($error['line'] ?? '') : null);
+    }
+
+    /**
+     * Template variables (macros, ONU registration) without what a template never needs and must not leak:
+     * device access parameters (credentials, unless ENABLE_SECRETS) and the permission list of the user role.
+     */
+    protected function safeTemplateVariables(mixed $variables): mixed
+    {
+        if (!\is_array($variables)) {
+            return $variables;
+        }
+        if (isset($variables['device']['access']) && \is_array($variables['device']['access']) && !$this->config->secretsEnabled) {
+            $variables['device']['access'] = array_intersect_key($variables['device']['access'], ['id' => 1, 'name' => 1]);
+        }
+        if (isset($variables['user']) && \is_array($variables['user'])) {
+            $user = $variables['user'];
+            $variables['user'] = array_filter([
+                'id' => $user['id'] ?? null,
+                'name' => $user['name'] ?? null,
+                'login' => $user['login'] ?? null,
+                'role' => isset($user['role']['id']) ? ['id' => $user['role']['id'], 'name' => $user['role']['name'] ?? null] : null,
+            ], static fn ($v) => null !== $v);
+        }
+
+        return $variables;
     }
 
     protected function source(string $source): string

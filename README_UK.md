@@ -22,7 +22,7 @@ Guzzle, [RoadRunner](https://roadrunner.dev) 3 для HTTP.
 
 Інструменти згруповано так само, як влаштовано сам WildCore:
 
-- групи **ядра** - розділи ядра WildCore: `devices`, `interfaces`, `onts`, `logs`, `poller`, `switcher-core`, `api`;
+- групи **ядра** - розділи ядра WildCore: `devices`, `interfaces`, `onts`, `logs`, `poller`, `switcher-core`, `users`, `api`;
 - групи **компонентів** - мають назву ключа компонента WildCore (`olts`, `macros`, `events` ...); вони
   показуються лише тоді, коли цей компонент увімкнено у WildCore.
 
@@ -41,12 +41,13 @@ Guzzle, [RoadRunner](https://roadrunner.dev) 3 для HTTP.
 
 | Група | Інструменти | Потрібно у WildCore |
 |---|---|---|
-| devices | `devices_list`, `device_get`, `device_find_by_ip`, `search`, `device_groups_list` | `device_show`; `search` - `global_search`; групи - `system_info` |
+| devices | `devices_list`, `device_get`, `device_find_by_ip`, `search`, `device_groups_list`, `device_models_list` | `device_show`; `search` - `global_search`; групи - `system_info` |
 | interfaces | `interfaces_list`, `interfaces_search`, `device_interfaces`, `interface_get`, `interface_history`, `interface_types` | `device_show` |
 | onts | `onts_list` (фільтр на кшталт `optical.rx < -27`), `ont_signals`, `ont_signal_reset` | `device_show`; скидання - `device_iface_management` |
 | logs | `logs_actions`, `logs_action_names`, `logs_switcher_core`, `logs_switcher_core_modules`, `calling_errors`, `logs_pollers`, `logs_poller_names`, `logs_schedule`, `logs_schedule_keys`, `latest_system_actions` | `system_logs_actions`, `log_switcher_core_actions`, `log_poller`, `schedule_reports` |
 | poller | `device_pollers`, `device_poll` | `poller_info_by_device`; опитування - `device_management` |
 | switcher-core | `swc_modules`, `swc_read` (лише модулі читання), `swc_call` (будь-який модуль) | лише root-користувач |
+| users | `user_roles_list` | `user_self_control` (за замовчуванням у кожної ролі) |
 | api | `api_search`, `api_describe`, `api_read`, `api_call` | право кожної операції |
 
 ### Компоненти
@@ -55,8 +56,8 @@ Guzzle, [RoadRunner](https://roadrunner.dev) 3 для HTTP.
 |---|---|---|
 | olts | `olt_onts`, `ont_info`, `olt_pon_ports`, `olt_physical_ports`, `olt_snooping`, `olt_cards`, `olt_resources`, `olt_onts_blacklist` | `olts_info` |
 | olts_control | `ont_reboot`, `ont_set_state`, `ont_set_description`, `ont_uni_port_set`, `ont_reset`, `ont_deregister`, `olt_port_reset`, `olt_port_set_description` | `olts_ctrl_*` для кожної дії |
-| onts_registration | `onts_unregistered`, `ont_find_unregistered`, `ont_registration_macros`, `ont_registration_preview`, `ont_registration_variables`, `ont_register`, `ont_registration_templates`, `ont_registration_template_get/create/update/clone/delete` | `unregistered_onts`; шаблони - `unregistered_onts_config` |
-| macros | `macros_list`, `macros_get`, `macros_preview`, `macros_variables`, `macros_execute`, `macros_manage_list`, `macros_manage_get`, `macros_create`, `macros_update`, `macros_clone`, `macros_delete` | `macros_execute`; керування - `macros_edit` |
+| onts_registration | `onts_unregistered`, `ont_find_unregistered`, `ont_registration_macros`, `ont_registration_preview`, `ont_registration_variables`, `ont_register`, `ont_registration_templates`, `ont_registration_template_variables`, `ont_registration_template_preview`, `ont_registration_template_get/create/update/clone/delete` | `unregistered_onts`; шаблони - `unregistered_onts_config` |
+| macros | `macros_list`, `macros_get`, `macros_preview`, `macros_variables`, `macros_execute`, `macros_template_variables`, `macros_template_preview`, `macros_manage_list`, `macros_manage_get`, `macros_create`, `macros_update`, `macros_clone`, `macros_delete` | `macros_execute`; керування - `macros_edit` |
 | switches | `switch_interfaces`, `switch_vlans`, `switch_snooping`, `switch_resources`, `switch_sfp_diag`, `switch_cable_diag` | `switches_info` |
 | switches_control | `switch_port_set`, `switch_clear_counters`, `switch_save_config`, `switch_reboot` | `switches_*` для кожної дії |
 | routers | `router_table` (інтерфейси, ARP, FDB, VLAN, BGP-піри, прямі маршрути, ресурси) | `router_info` |
@@ -163,8 +164,9 @@ WildCore, доступну з Docker. Для WildCore на тій самій м�
 ### Claude Code - плагін (рекомендовано)
 
 Репозиторій є маркетплейсом плагінів Claude Code. Плагін `wildcore` містить MCP-сервер (stdio через Docker) і
-два skills: `wildcore` (як користуватися інструментами, правила безпеки для дій, що змінюють пристрої, орієнтири
-рівнів сигналу) і `/wildcore:onu-check <serial|MAC|договір>`.
+skills: `wildcore` (як користуватися інструментами, значення полів, рівні сигналу, правила безпеки для дій,
+що змінюють пристрої), `macros` (написання макросів і шаблонів реєстрації ONU: змінні, типи параметрів, правила
+Twig, спецкоманди, приклади) і `/wildcore:onu-check <serial|MAC|договір>`.
 
 ```
 /plugin marketplace add wildcore-dms/mcp-server
