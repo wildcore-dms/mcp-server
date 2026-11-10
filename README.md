@@ -72,7 +72,6 @@ e.g. `DISABLED_TAGS=switches_control,olts_control,api`.
 | live_traffic | `interface_live_traffic` | `live_traffic_info` |
 | links | `device_links`, `topology_upward` | `links_view` |
 | analytics | `analytics_report` (bad signals, growing errors, duplicated MACs/ONUs, ONU status history ...) | `analytics` |
-| pon_boxes | `pon_boxes_list`, `pon_box_get`, `pon_boxes_problems` | `pon_boxes_view` |
 | oxidized | `device_config_status`, `device_config` (secrets) | `external_apps_oxidized` |
 
 Tools run with the permissions of the WildCore user owning `WILDCORE_TOKEN`; roles and device groups are

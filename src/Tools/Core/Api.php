@@ -56,7 +56,6 @@ final class Api extends AbstractTools
         '#^POST /component/fdb_history/filter$#',
         '#^POST /component/search_device/(search-ip|search-ip-with-fdb|search-mac)$#',
         '#^POST /component/trapservice/history$#',
-        '#^POST /component/pon_boxes/full-history$#',
         '#^POST /component/prometheus_wrapper/chart-[a-z-]+$#',
         '#^POST /component/sensor_devices/\{[^}]+\}/get-series/#',
         '#^POST /dev-dashboard/devices$#',

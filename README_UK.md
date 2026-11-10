@@ -71,7 +71,6 @@ Guzzle, [RoadRunner](https://roadrunner.dev) 3 для HTTP.
 | live_traffic | `interface_live_traffic` | `live_traffic_info` |
 | links | `device_links`, `topology_upward` | `links_view` |
 | analytics | `analytics_report` (поганий сигнал, зростання помилок, дублікати MAC/ONU, історія статусів ONU ...) | `analytics` |
-| pon_boxes | `pon_boxes_list`, `pon_box_get`, `pon_boxes_problems` | `pon_boxes_view` |
 | oxidized | `device_config_status`, `device_config` (secrets) | `external_apps_oxidized` |
 
 Інструменти виконуються з правами користувача WildCore, якому належить `WILDCORE_TOKEN`; ролі та групи пристроїв
