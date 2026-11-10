@@ -1,4 +1,5 @@
-FROM composer:2.10.3@sha256:b6dcd72ca98fa19d0e5b8476de179859704891fad06dd9e0b96833d4c430a5fc AS vendor
+# vendor/ is plain PHP, the same for every architecture - built natively on the build host
+FROM --platform=$BUILDPLATFORM composer:2.10.3@sha256:b6dcd72ca98fa19d0e5b8476de179859704891fad06dd9e0b96833d4c430a5fc AS vendor
 
 WORKDIR /app
 COPY composer.json composer.lock ./

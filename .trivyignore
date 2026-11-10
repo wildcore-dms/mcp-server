@@ -1,0 +1,6 @@
+# Every entry needs a reason and an expiry date - the scan fails again after it.
+
+# golang.org/x/net/html DoS via crafted HTML (fixed in x/net 0.62.0) in the RoadRunner 3.0.1 binary.
+# RoadRunner here only proxies JSON HTTP requests to the PHP worker and never parses HTML.
+# No RoadRunner release with x/net >= 0.62.0 yet (master has it) - bump the rr image and drop this entry.
+CVE-2026-78661 exp:2026-12-31

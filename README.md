@@ -76,8 +76,13 @@ request to narrow the query.
 
 ```bash
 cp .env.example .env   # WILDCORE_URL, WILDCORE_TOKEN
-docker build -t wildcore-mcp .
+docker pull ghcr.io/wildcore-dms/mcp-server:latest   # or: docker build -t wildcore-mcp .
 ```
+
+Images are built by GitHub Actions (`.github/workflows/docker.yml`) for `linux/amd64` and `linux/arm64`:
+`latest` from `main`, `X.Y.Z` / `X.Y` from `vX.Y.Z` tags, `sha-<commit>` for every build. Each build runs the
+unit tests, a smoke test of the image and a Trivy scan (fixed CRITICAL/HIGH findings fail the build; accepted
+exceptions with a reason and an expiry date live in `.trivyignore`).
 
 ### stdio
 
@@ -104,8 +109,8 @@ All clients of the HTTP server share the permissions of a single `WILDCORE_TOKEN
 ## Connecting to Claude
 
 Create a dedicated WildCore user for Claude with only the permissions and device groups it should have, and
-generate an API key for it (Users -> user -> generate auth key). Build the image once:
-`docker build -t wildcore-mcp:latest https://github.com/wildcore-dms/mcp-server.git` (or from a local clone).
+generate an API key for it (Users -> user -> generate auth key). The examples use the image published by CI,
+`ghcr.io/wildcore-dms/mcp-server:latest` (`docker pull` it once); a locally built `wildcore-mcp:latest` works the same.
 
 `WILDCORE_URL` is resolved inside the container: use an address reachable from Docker, not `localhost`
 (add `--network host` to the docker arguments to reach a WildCore on the same machine).
@@ -132,7 +137,7 @@ stdio (local Docker):
 ```bash
 claude mcp add wildcore \
   -e WILDCORE_URL=https://wildcore.example.com -e WILDCORE_TOKEN=<api key> -e READ_ONLY_MODE=true \
-  -- docker run -i --rm -e WILDCORE_URL -e WILDCORE_TOKEN -e READ_ONLY_MODE wildcore-mcp:latest php bin/wildcore-mcp
+  -- docker run -i --rm -e WILDCORE_URL -e WILDCORE_TOKEN -e READ_ONLY_MODE ghcr.io/wildcore-dms/mcp-server:latest php bin/wildcore-mcp
 ```
 
 HTTP (shared server started with `docker-compose.example.yml`):
@@ -154,7 +159,7 @@ Settings -> Developer -> Edit Config, add to `claude_desktop_config.json` and re
     "wildcore": {
       "command": "docker",
       "args": ["run", "-i", "--rm", "-e", "WILDCORE_URL", "-e", "WILDCORE_TOKEN", "-e", "READ_ONLY_MODE",
-               "wildcore-mcp:latest", "php", "bin/wildcore-mcp"],
+               "ghcr.io/wildcore-dms/mcp-server:latest", "php", "bin/wildcore-mcp"],
       "env": {
         "WILDCORE_URL": "https://wildcore.example.com",
         "WILDCORE_TOKEN": "<api key>",
